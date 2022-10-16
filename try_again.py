@@ -26,9 +26,12 @@ class TestStrategy(bt.Strategy):
 
     def __init__(self):
         #Keep a reference to the "close" line in the data[0] dataseries
+        self.count=0
         self.dataclose = self.datas[0].close
+        print('close[0]:',self.dataclose[0])
         self.dataopen = self.datas[0].open
         self.datetime = self.datas[0].datetime
+        self.log('Datetime, %2f' % self.datetime[0])
 #        print(len(self.datas[0].open))
         # To keep track of pending orders
         self.order = None
@@ -56,37 +59,39 @@ class TestStrategy(bt.Strategy):
 
     def next(self):
         #Simply log the closing price of the series from the reference
+        print(f'{self.count+1} loop of next')
         self.log('Close, %2f' % self.dataclose[0])
         self.log('Open, %2f' % self.dataopen[0])
         self.log('Datetime, %2f' % self.datetime[0])
-        # Check if an order is pending ... if yes, we cannot send a 2nd one
-        if self.order:
-            return
-
-        # Check if we are in the market
-        if not self.position:
-
-            # Not yet ... we MIGHT BUY if ...
-#            if self.dataclose[0] < self.dataclose[-1]:
-            if True:
-                    # current close less than previous close
-
-                # BUY, BUY, BUY!!! (with default parameters)
-                self.log('BUY CREATE, %.2f' % self.dataclose[0])
-
-                # Keep track of the created order to avoid a 2nd order
-                self.order = self.buy(size=500)
-
-        else:
-
-            # Already in the market ... we might sell
-            if len(self) >= (self.bar_executed + 5):
-                # SELL, SELL, SELL!!! (with all possible default parameters)
-                self.log('SELL CREATE, %.2f' % self.dataclose[0])
-
-                # Keep track of the created order to avoid a 2nd order
-                self.order = self.sell()
-        print('--'*10+'split')
+#        # Check if an order is pending ... if yes, we cannot send a 2nd one
+#        if self.order:
+#            return
+#
+#        # Check if we are in the market
+#        if not self.position:
+#
+#            # Not yet ... we MIGHT BUY if ...
+##            if self.dataclose[0] < self.dataclose[-1]:
+#            if True:
+#                    # current close less than previous close
+#
+#                # BUY, BUY, BUY!!! (with default parameters)
+#                self.log('BUY CREATE, %.2f' % self.dataclose[0])
+#
+#                # Keep track of the created order to avoid a 2nd order
+#                self.order = self.buy(size=500)
+#
+#        else:
+#
+#            # Already in the market ... we might sell
+#            if len(self) >= (self.bar_executed + 5):
+#                # SELL, SELL, SELL!!! (with all possible default parameters)
+#                self.log('SELL CREATE, %.2f' % self.dataclose[0])
+#
+#                # Keep track of the created order to avoid a 2nd order
+#                self.order = self.sell()
+        self.count+=1
+        print('--'*20+'split')
 
 if __name__ == '__main__':
     # Create a cerebro entity
@@ -103,9 +108,10 @@ if __name__ == '__main__':
     data = bt.feeds.GenericCSVData(
             dataname=datapath,
         # Do not pass values before this date
-            fromdate=datetime.datetime(2020, 1, 1),
+            fromdate=datetime.datetime(2020, 6, 1),
         # Do not pass values after this date
             todate=datetime.datetime(2020, 12, 31),
+            reverse=True,
             dtformat=('%Y%m%d'),
             datetime=2,
             open=3,
