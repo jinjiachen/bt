@@ -16,13 +16,17 @@ import pdb
 
 #Create a strategy
 class TestStrategy(bt.Strategy):
+    params=(
+            ('ma',21),
+            ('printlog',False),
+            )
 
 
-    def log(self, txt, dt=None):
+    def log(self, txt, dt=None,doprint=False):
         '''Logging function for this strategy'''
-        dt = dt or self.datas[0].datetime.date(0)
-        print('%s, %s' % (dt.isoformat(), txt))
-#        print('%s, %s' % ('close', txt))
+        if self.params.printlog or doprint:
+            dt = dt or self.datas[0].datetime.date(0)
+            print('%s, %s' % (dt.isoformat(), txt))
 
 
     def __init__(self):
@@ -33,12 +37,12 @@ class TestStrategy(bt.Strategy):
 #        self.log('Close, %2f' % self.dataclose[0])
         self.dataopen = self.datas[0].open
         self.datetime = self.datas[0].datetime
-        self.sma=bt.indicators.SimpleMovingAverage(self.datas[0],period=21)
+        self.sma=bt.indicators.SimpleMovingAverage(self.datas[0],period=self.params.ma)
 #        self.log('Datetime, %2f' % self.datetime[0])
-        print(self.datas[0])
-        print(self.datas[0].close)
-        print(self.datas[0].open)
-        print(len(self.datas[0].lines))
+#        print(self.datas[0])
+#        print(self.datas[0].close)
+#        print(self.datas[0].open)
+#        print(len(self.datas[0].lines))
         # To keep track of pending orders
         self.order = None
 #        pdb.set_trace()
@@ -74,11 +78,11 @@ class TestStrategy(bt.Strategy):
 
     def next(self):
         #Simply log the closing price of the series from the reference
-        print(f'{self.count+1} loop of next')
+#        print(f'{self.count+1} loop of next')
         self.log('Close, %2f' % self.dataclose[0])
         self.log('Open, %2f' % self.dataopen[0])
         self.log('Datetime, %2f' % self.datetime[0])
-        self.log('Sma, %2f' % self.sma[0])
+        self.log(f'Sma{self.params.ma}, %2f' % self.sma[0])
         # Check if an order is pending ... if yes, we cannot send a 2nd one
         if self.order:
             return
@@ -117,18 +121,28 @@ class TestStrategy(bt.Strategy):
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.sell()
         self.count+=1
-        print('--'*20+'split')
+#        print('--'*20+'split')
+
+
+    def stop(self):
+        self.log('(MA Period %2d) Ending Value %.2f' %
+                 (self.params.ma, self.broker.getvalue()), doprint=True)
 
 if __name__ == '__main__':
     # Create a cerebro entity
     cerebro = bt.Cerebro()
 
     #Add a strategy
-    cerebro.addstrategy(TestStrategy)
+#    cerebro.addstrategy(TestStrategy)
+
+
+    #Add a optstrategy
+    cerebro.optstrategy(TestStrategy,ma=range(10,30))
 
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
-#    datapath = './new.csv'
+
+    #通过数据库生成CSV文件作为datafeed
     datapath=input('please input the data feed:')
     datapath=datapath.replace('\'','')
 
@@ -150,9 +164,12 @@ if __name__ == '__main__':
             volume=-1,
             openinterest=-1
         )
+
+
 #    start = datetime(2021,1,1)
 #    end = datetime(2021,10,8)
 
+    #直接通过数据库查询来提供datafeed
 #    engine_ts = create_engine('mysql://root:administrator@127.0.0.1:3306/tushare?charset=utf8&use_unicode=1') ##数据库初始化
 #    sql='SELECT DISTINCT "000592.sz",trade_date,open,high,low,close FROM Daily ORDER BY trade_date DESC LIMIT 10000;' #构建SQL查询语句
 #    df=pd.read_sql_query(sql, engine_ts) #运用pandas模块read_sql_query方法执行SQL语句
@@ -182,4 +199,4 @@ if __name__ == '__main__':
     # Print out the final result
     print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
-    cerebro.plot(volume=False)
+#    cerebro.plot(volume=False)
